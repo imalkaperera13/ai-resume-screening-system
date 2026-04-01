@@ -56,6 +56,15 @@ def calculate_similarity(resume_text, job_description):
     similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
     return round(similarity * 100, 2)
 
+# Recommendation logic
+def get_recommendation(score):
+    if score >= 75:
+        return "Shortlist"
+    elif score >= 50:
+        return "Consider"
+    else:
+        return "Reject for now"
+
 # UI
 st.title("AI Resume Screening System")
 st.write("Upload multiple resumes, compare them with a job description, and rank the best candidates.")
@@ -84,12 +93,14 @@ if st.button("Analyze Resumes"):
             resume_skills = extract_skills(cleaned_resume, SKILLS_DB)
             matched_skills = sorted(list(set(resume_skills) & set(jd_skills)))
             missing_skills = sorted(list(set(jd_skills) - set(resume_skills)))
+            recommendation = get_recommendation(score)
 
             results.append({
                 "Resume Name": uploaded_resume.name,
                 "Match Score (%)": score,
                 "Matched Skills": ", ".join(matched_skills) if matched_skills else "None",
-                "Missing Skills": ", ".join(missing_skills) if missing_skills else "None"
+                "Missing Skills": ", ".join(missing_skills) if missing_skills else "None",
+                "Recommendation": recommendation
             })
 
         results_df = pd.DataFrame(results)
@@ -99,15 +110,14 @@ if st.button("Analyze Resumes"):
         top_candidate = results_df.iloc[0]
         avg_score = round(results_df["Match Score (%)"].mean(), 2)
 
-        # Dashboard metrics
+        # Dashboard Summary
         st.subheader("Dashboard Summary")
         col1, col2, col3 = st.columns(3)
-
         col1.metric("Total Resumes", len(results_df))
         col2.metric("Top Score", f"{top_candidate['Match Score (%)']}%")
         col3.metric("Average Score", f"{avg_score}%")
 
-        # JD Skills Summary
+        # JD Skills
         st.subheader("Job Description Skills Detected")
         if jd_skills:
             for skill in sorted(jd_skills):
@@ -115,7 +125,7 @@ if st.button("Analyze Resumes"):
         else:
             st.write("No known skills detected from the job description.")
 
-        # Ranking table
+        # Ranking Table
         st.subheader("Resume Ranking")
         st.dataframe(results_df, use_container_width=True)
 
@@ -128,7 +138,7 @@ if st.button("Analyze Resumes"):
             mime="text/csv",
         )
 
-        # Bar chart
+        # Bar Chart
         st.subheader("Candidate Score Chart")
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.bar(results_df["Resume Name"], results_df["Match Score (%)"])
@@ -138,30 +148,36 @@ if st.button("Analyze Resumes"):
         plt.xticks(rotation=30)
         st.pyplot(fig)
 
-        # Top 3 candidates
+        # Top 3 Candidates
         st.subheader("Top 3 Candidates")
         top_3 = results_df.head(3)
-
         for _, row in top_3.iterrows():
-            st.info(f"Rank {row['Rank']} - {row['Resume Name']} - {row['Match Score (%)']}%")
+            st.info(
+                f"Rank {row['Rank']} - {row['Resume Name']} - {row['Match Score (%)']}% - {row['Recommendation']}"
+            )
 
-        # Score interpretation
-        st.subheader("Score Interpretation")
+        # Candidate Decisions
+        st.subheader("Candidate Decisions")
         for _, row in results_df.iterrows():
-            score = row["Match Score (%)"]
             name = row["Resume Name"]
+            score = row["Match Score (%)"]
+            recommendation = row["Recommendation"]
+            missing_skills = row["Missing Skills"]
 
-            if score >= 75:
-                st.success(f"{name} — Strong Match ({score}%)")
-            elif score >= 50:
-                st.warning(f"{name} — Moderate Match ({score}%)")
+            if recommendation == "Shortlist":
+                st.success(f"{name} — {recommendation} ({score}%)")
+            elif recommendation == "Consider":
+                st.warning(f"{name} — {recommendation} ({score}%)")
             else:
-                st.error(f"{name} — Low Match ({score}%)")
+                st.error(f"{name} — {recommendation} ({score}%)")
 
-        # Best candidate
+            st.write(f"Missing Skills: {missing_skills}")
+
+        # Best Candidate
         st.subheader("Top Candidate")
         st.success(
-            f"Best Match: {top_candidate['Resume Name']} with {top_candidate['Match Score (%)']}%"
+            f"Best Match: {top_candidate['Resume Name']} with {top_candidate['Match Score (%)']}% "
+            f"({top_candidate['Recommendation']})"
         )
 
     else:
