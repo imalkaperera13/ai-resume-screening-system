@@ -32,3 +32,8 @@ An AI-powered resume screening system that compares a resume with a job descript
 - Candidate leaderboard
 - Export results
 - Better UI
+
+## Run Locally
+```bash
+pip install -r requirements.txt
+streamlit run app.py
