@@ -1,38 +1,34 @@
 # AI Resume Screening System
 
-An AI-powered resume screening system that compares resumes with job descriptions and ranks candidates.
+An AI-powered resume screening system that compares a resume with a job description using NLP techniques.
 
 ## Features
-
-- Upload Resume (PDF)
-- Paste Job Description
-- AI Match Score
-- Skill Matching
-- Missing Skills Detection
-- Resume Text Extraction
-- NLP-based similarity scoring
+- Upload resume PDF
+- Paste job description
+- Calculate AI match score
+- Show matched skills
+- Show missing skills
+- Extract text from resume
+- Clean and compare text
 
 ## Tech Stack
-
 - Python
 - Streamlit
-- Scikit-learn
 - PyPDF2
-- NLP (TF-IDF + Cosine Similarity)
+- scikit-learn
 
-## How It Works
+## AI Concepts Used
+- NLP
+- TF-IDF
+- Cosine Similarity
+- Skill Extraction
 
-1. Upload resume
-2. Enter job description
-3. System extracts resume text
-4. NLP similarity calculated
-5. Skills extracted
-6. Matched + Missing skills shown
+## Current Progress
+- Stage 1 completed
+- Stage 2 completed
 
 ## Future Improvements
-
 - Multiple resume ranking
-- Resume database
 - Candidate leaderboard
 - Export results
-- BERT embeddings
+- Better UI
