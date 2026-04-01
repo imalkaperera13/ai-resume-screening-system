@@ -4,6 +4,9 @@ from PyPDF2 import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title="AI Resume Screening System", layout="wide")
 
 SKILLS_DB = [
     "python", "java", "c++", "sql",
@@ -54,7 +57,8 @@ def calculate_similarity(resume_text, job_description):
     return round(similarity * 100, 2)
 
 # UI
-st.title("AI Resume Screening System - Multiple Resume Ranking")
+st.title("AI Resume Screening System")
+st.write("Upload multiple resumes, compare them with a job description, and rank the best candidates.")
 
 uploaded_resumes = st.file_uploader(
     "Upload Resumes (PDF)",
@@ -62,7 +66,7 @@ uploaded_resumes = st.file_uploader(
     accept_multiple_files=True
 )
 
-job_description = st.text_area("Paste Job Description")
+job_description = st.text_area("Paste Job Description", height=200)
 
 if st.button("Analyze Resumes"):
     if uploaded_resumes and job_description:
@@ -92,11 +96,31 @@ if st.button("Analyze Resumes"):
         results_df = results_df.sort_values(by="Match Score (%)", ascending=False).reset_index(drop=True)
         results_df.insert(0, "Rank", range(1, len(results_df) + 1))
 
+        top_candidate = results_df.iloc[0]
+        avg_score = round(results_df["Match Score (%)"].mean(), 2)
+
+        # Dashboard metrics
+        st.subheader("Dashboard Summary")
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("Total Resumes", len(results_df))
+        col2.metric("Top Score", f"{top_candidate['Match Score (%)']}%")
+        col3.metric("Average Score", f"{avg_score}%")
+
+        # JD Skills Summary
+        st.subheader("Job Description Skills Detected")
+        if jd_skills:
+            for skill in sorted(jd_skills):
+                st.write("•", skill)
+        else:
+            st.write("No known skills detected from the job description.")
+
+        # Ranking table
         st.subheader("Resume Ranking")
-        st.dataframe(results_df)
+        st.dataframe(results_df, use_container_width=True)
 
+        # CSV Download
         csv = results_df.to_csv(index=False).encode("utf-8")
-
         st.download_button(
             label="Download Results as CSV",
             data=csv,
@@ -104,6 +128,24 @@ if st.button("Analyze Resumes"):
             mime="text/csv",
         )
 
+        # Bar chart
+        st.subheader("Candidate Score Chart")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.bar(results_df["Resume Name"], results_df["Match Score (%)"])
+        ax.set_xlabel("Resume Name")
+        ax.set_ylabel("Match Score (%)")
+        ax.set_title("Resume Ranking by Match Score")
+        plt.xticks(rotation=30)
+        st.pyplot(fig)
+
+        # Top 3 candidates
+        st.subheader("Top 3 Candidates")
+        top_3 = results_df.head(3)
+
+        for _, row in top_3.iterrows():
+            st.info(f"Rank {row['Rank']} - {row['Resume Name']} - {row['Match Score (%)']}%")
+
+        # Score interpretation
         st.subheader("Score Interpretation")
         for _, row in results_df.iterrows():
             score = row["Match Score (%)"]
@@ -116,10 +158,11 @@ if st.button("Analyze Resumes"):
             else:
                 st.error(f"{name} — Low Match ({score}%)")
 
+        # Best candidate
         st.subheader("Top Candidate")
-        top_candidate = results_df.iloc[0]
         st.success(
             f"Best Match: {top_candidate['Resume Name']} with {top_candidate['Match Score (%)']}%"
         )
+
     else:
         st.warning("Please upload at least one resume and enter a job description.")
